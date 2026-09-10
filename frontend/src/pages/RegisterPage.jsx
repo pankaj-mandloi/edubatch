@@ -177,7 +177,7 @@ const RegisterPage = () => {
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all ${
                 errors.phone ? 'border-red-500 ring-1 ring-red-500' : 'border-gray-300'
               }`}
-              placeholder="9876543210"
+              placeholder="Enter phone number"
             />
             {errors.phone && (
               <p className="mt-1 text-sm text-red-500">{errors.phone}</p>

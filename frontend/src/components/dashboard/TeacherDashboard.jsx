@@ -10,6 +10,7 @@ import {
   SparklesIcon,
   AcademicCapIcon
 } from '@heroicons/react/24/outline';
+import UpcomingClasses from './UpcomingClasses';
 
 const StatCard = ({ title, value, icon: Icon, gradient }) => (
   <div className="group card-stats">
@@ -70,7 +71,7 @@ const TeacherDashboard = ({ stats }) => {
       to: '/attendance',
       icon: CalendarDaysIcon,
       label: 'Mark Attendance',
-      description: 'Record today\'s attendance'
+      description: "Record today's attendance"
     },
     {
       to: '/notices',
@@ -100,6 +101,9 @@ const TeacherDashboard = ({ stats }) => {
           <StatCard key={index} {...card} />
         ))}
       </div>
+
+      {/* Upcoming Classes - Full Width */}
+      <UpcomingClasses />
 
       {/* Quick Actions */}
       <div className="card-gradient">

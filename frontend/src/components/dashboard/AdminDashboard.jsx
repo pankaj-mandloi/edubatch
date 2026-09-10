@@ -11,16 +11,15 @@ import {
   PlusIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
+import RevenueChart from './RevenueChart';
+import UpcomingClasses from './UpcomingClasses';
 
-const StatCard = ({ title, value, icon: Icon, gradient, trend }) => (
+const StatCard = ({ title, value, icon: Icon, gradient }) => (
   <div className="group card-stats">
     <div className="flex items-start justify-between">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-gray-500">{title}</p>
         <p className="text-3xl font-bold text-gray-800 mt-1">{value}</p>
-        {trend && (
-          <p className="text-xs text-emerald-600 mt-1 font-medium">{trend}</p>
-        )}
       </div>
       <div className={`w-12 h-12 rounded-xl ${gradient} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform duration-300 flex-shrink-0`}>
         <Icon className="w-6 h-6 text-white" />
@@ -121,6 +120,12 @@ const AdminDashboard = ({ stats }) => {
         {statCards.map((card, index) => (
           <StatCard key={index} {...card} />
         ))}
+      </div>
+
+      {/* Charts & Classes Row - EQUAL HEIGHT */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-stretch">
+        <RevenueChart />
+        <UpcomingClasses />
       </div>
 
       {/* Quick Actions */}

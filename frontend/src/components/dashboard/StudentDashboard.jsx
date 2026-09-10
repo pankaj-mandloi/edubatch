@@ -1,6 +1,12 @@
 import React from 'react';
-import { BookOpenIcon, CreditCardIcon, ClockIcon, AcademicCapIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
+import {
+  BookOpenIcon,
+  CreditCardIcon,
+  ClockIcon,
+  SparklesIcon
+} from '@heroicons/react/24/outline';
+import UpcomingClasses from './UpcomingClasses';
 
 const StatCard = ({ title, value, icon: Icon, gradient }) => (
   <div className="group card-stats">
@@ -39,14 +45,19 @@ const StudentDashboard = ({ stats }) => {
   ];
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {cards.map((card, index) => (
           <StatCard key={index} {...card} />
         ))}
       </div>
 
-      <div className="mt-6 card-gradient">
+      {/* Upcoming Classes - Full Width */}
+      <UpcomingClasses />
+
+      {/* Quick Actions */}
+      <div className="card-gradient">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-2.5">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-md">
@@ -58,15 +69,15 @@ const StudentDashboard = ({ stats }) => {
             </div>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link 
-              to="/batches" 
+            <Link
+              to="/batches"
               className="btn-primary flex items-center"
             >
               <BookOpenIcon className="w-4 h-4 mr-2" />
               View Batches
             </Link>
-            <Link 
-              to="/payments" 
+            <Link
+              to="/payments"
               className="btn-success flex items-center"
             >
               <CreditCardIcon className="w-4 h-4 mr-2" />

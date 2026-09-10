@@ -9,7 +9,9 @@ const {
   changePassword,
   updateUserRole,
   toggleUserStatus,
-  getDashboardStats
+  getDashboardStats,
+  getUpcomingClasses,
+  getRevenueChart
 } = require('../controllers/userController');
 
 // All routes require authentication
@@ -17,6 +19,8 @@ router.use(auth);
 
 // Dashboard stats (role-based)
 router.get('/dashboard', getDashboardStats);
+router.get('/upcoming-classes', getUpcomingClasses);        
+router.get('/revenue-chart', roleCheck('admin'), getRevenueChart);  
 
 // Profile routes
 router.put('/profile', updateProfile);

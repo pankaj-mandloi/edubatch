@@ -7,9 +7,6 @@ const razorpayInstance = require('../config/razorpay');
 const { validatePaymentVerification } = require('../middleware/validation');
 const { sendPaymentReceipt } = require('../services/emailService');
 
-// @desc    Create Razorpay order
-// @route   POST /api/v1/payments/create-order
-// @access  Student only
 const createOrder = async (req, res, next) => {
   try {
     const { enrollmentId } = req.body;
@@ -21,7 +18,6 @@ const createOrder = async (req, res, next) => {
       });
     }
 
-    // Find enrollment
     const enrollment = await Enrollment.findById(enrollmentId)
       .populate('student', 'name email')
       .populate('batch', 'name fee');
@@ -33,7 +29,6 @@ const createOrder = async (req, res, next) => {
       });
     }
 
-    // Check if student owns this enrollment
     if (enrollment.student._id.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
@@ -41,7 +36,6 @@ const createOrder = async (req, res, next) => {
       });
     }
 
-    // Check if already paid
     if (enrollment.paymentStatus === 'paid') {
       return res.status(400).json({
         success: false,
@@ -49,7 +43,6 @@ const createOrder = async (req, res, next) => {
       });
     }
 
-    // Check if enrollment is active
     if (!enrollment.isActive) {
       return res.status(400).json({
         success: false,
@@ -57,12 +50,16 @@ const createOrder = async (req, res, next) => {
       });
     }
 
+    await Payment.deleteMany({
+      enrollment: enrollmentId,
+      status: 'created'
+    });
+
     const amount = enrollment.batch.fee;
     const receipt = `receipt_${Date.now()}_${enrollment._id}`;
 
-    // Create Razorpay order
     const options = {
-      amount: amount * 100, // Convert to paise
+      amount: amount * 100,
       currency: 'INR',
       receipt: receipt,
       notes: {
@@ -74,7 +71,6 @@ const createOrder = async (req, res, next) => {
 
     const order = await razorpayInstance.orders.create(options);
 
-    // Create payment record
     const payment = await Payment.create({
       enrollment: enrollmentId,
       student: req.userId,
@@ -84,7 +80,6 @@ const createOrder = async (req, res, next) => {
       receipt: receipt
     });
 
-    // Update enrollment with payment reference
     enrollment.payment = payment._id;
     await enrollment.save();
 
@@ -105,9 +100,6 @@ const createOrder = async (req, res, next) => {
   }
 };
 
-// @desc    Verify Razorpay payment
-// @route   POST /api/v1/payments/verify
-// @access  Private
 const verifyPayment = async (req, res, next) => {
   try {
     const { error } = validatePaymentVerification(req.body);
@@ -120,7 +112,6 @@ const verifyPayment = async (req, res, next) => {
 
     const { orderId, paymentId, signature, enrollmentId } = req.body;
 
-    // Find payment
     const payment = await Payment.findOne({ razorpayOrderId: orderId })
       .populate('student', 'name email')
       .populate('enrollment');
@@ -132,7 +123,6 @@ const verifyPayment = async (req, res, next) => {
       });
     }
 
-    // Check if payment is already verified
     if (payment.status === 'paid') {
       return res.status(400).json({
         success: false,
@@ -140,7 +130,6 @@ const verifyPayment = async (req, res, next) => {
       });
     }
 
-    // Verify signature
     const generatedSignature = crypto
       .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
       .update(`${orderId}|${paymentId}`)
@@ -156,14 +145,12 @@ const verifyPayment = async (req, res, next) => {
       });
     }
 
-    // Update payment
     payment.razorpayPaymentId = paymentId;
     payment.razorpaySignature = signature;
     payment.status = 'paid';
     payment.paidAt = new Date();
     await payment.save();
 
-    // Update enrollment
     const enrollment = await Enrollment.findById(enrollmentId);
     if (enrollment) {
       enrollment.paymentStatus = 'paid';
@@ -171,7 +158,6 @@ const verifyPayment = async (req, res, next) => {
       await enrollment.save();
     }
 
-    // Send receipt email
     try {
       await sendPaymentReceipt(
         payment.student.email,
@@ -200,19 +186,14 @@ const verifyPayment = async (req, res, next) => {
   }
 };
 
-// @desc    Get payment history
-// @route   GET /api/v1/payments/history
-// @access  Private
 const getPaymentHistory = async (req, res, next) => {
   try {
     let filter = {};
 
-    // Student sees only their payments
     if (req.userRole === 'student') {
       filter.student = req.userId;
     }
 
-    // Teacher sees payments for their batches
     if (req.userRole === 'teacher') {
       const teacherBatches = await Batch.find({ teacher: req.userId }).select('_id');
       const batchIds = teacherBatches.map(b => b._id);
@@ -245,9 +226,6 @@ const getPaymentHistory = async (req, res, next) => {
   }
 };
 
-// @desc    Get payment by ID
-// @route   GET /api/v1/payments/:id
-// @access  Private
 const getPaymentById = async (req, res, next) => {
   try {
     const payment = await Payment.findById(req.params.id)
@@ -267,7 +245,6 @@ const getPaymentById = async (req, res, next) => {
       });
     }
 
-    // Check access
     if (req.userRole === 'student' && payment.student._id.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
@@ -290,9 +267,6 @@ const getPaymentById = async (req, res, next) => {
   }
 };
 
-// @desc    Get payment status for an enrollment
-// @route   GET /api/v1/payments/status/:enrollmentId
-// @access  Private
 const getPaymentStatus = async (req, res, next) => {
   try {
     const { enrollmentId } = req.params;
@@ -307,7 +281,6 @@ const getPaymentStatus = async (req, res, next) => {
       });
     }
 
-    // Check access
     if (req.userRole === 'student' && enrollment.student.toString() !== req.userId.toString()) {
       return res.status(403).json({
         success: false,
@@ -333,21 +306,14 @@ const getPaymentStatus = async (req, res, next) => {
   }
 };
 
-// @desc    Webhook for Razorpay (optional - for extra reliability)
-// @route   POST /api/v1/payments/webhook
-// @access  Public (but verified)
 const webhook = async (req, res, next) => {
   try {
     const { event, payload } = req.body;
-
-    // Verify webhook signature (implementation depends on Razorpay webhook secret)
-    // This is optional but recommended for production
 
     if (event === 'payment.captured') {
       const paymentId = payload.payment.entity.id;
       const orderId = payload.payment.entity.order_id;
 
-      // Find and update payment
       const payment = await Payment.findOne({ razorpayOrderId: orderId });
       if (payment && payment.status !== 'paid') {
         payment.razorpayPaymentId = paymentId;
@@ -355,7 +321,6 @@ const webhook = async (req, res, next) => {
         payment.paidAt = new Date();
         await payment.save();
 
-        // Update enrollment
         const enrollment = await Enrollment.findById(payment.enrollment);
         if (enrollment) {
           enrollment.paymentStatus = 'paid';
@@ -368,7 +333,7 @@ const webhook = async (req, res, next) => {
     res.status(200).json({ received: true });
   } catch (error) {
     console.error('Webhook error:', error);
-    res.status(200).json({ received: true }); // Always acknowledge receipt
+    res.status(200).json({ received: true });
   }
 };
 

@@ -1,9 +1,7 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// Use hardcoded URL for now if env variable not set
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-console.log('📍 API_URL:', API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
@@ -20,26 +18,28 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('📤 API Request:', config.method.toUpperCase(), config.url);
     return config;
   },
   (error) => {
-    console.error('❌ Request Error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor
 api.interceptors.response.use(
-  (response) => {
-    console.log('📥 API Response:', response.status, response.config.url);
-    return response;
-  },
+  (response) => response,
   async (error) => {
-    console.error('❌ Response Error:', error.response?.status, error.config?.url);
     const originalRequest = error.config;
+    const errorMessage = error.response?.data?.message || 'Something went wrong';
+    const status = error.response?.status;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // ✅ FIX: Skip refresh logic for auth endpoints (login/register/forgot/reset)
+    const isAuthEndpoint = originalRequest?.url?.includes('/auth/login') ||
+                          originalRequest?.url?.includes('/auth/register') ||
+                          originalRequest?.url?.includes('/auth/forgot-password') ||
+                          originalRequest?.url?.includes('/auth/reset-password');
+
+    if (status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
       try {
@@ -65,16 +65,14 @@ api.interceptors.response.use(
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
-        window.location.href = '/login';
         toast.error('Session expired. Please login again.');
+        window.location.href = '/login';
         return Promise.reject(refreshError);
       }
     }
 
-    const message = error.response?.data?.message || 'Something went wrong';
-    if (error.response?.status !== 401) {
-      toast.error(message);
-    }
+    // ✅ FIX: Always show toast for all errors (including 401 on login)
+    toast.error(errorMessage);
 
     return Promise.reject(error);
   }
