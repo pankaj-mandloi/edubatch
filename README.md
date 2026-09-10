@@ -484,6 +484,12 @@ Authorization: Bearer <accessToken>
 
 ---
 
+## 🌐 Live Application
+
+- **Frontend:** https://edubatch.vercel.app
+- **Backend API:** https://edubatch-backend.onrender.com
+- **Health Check:** https://edubatch-backend.onrender.com/api/health
+
 ## 🔑 Test Credentials
 
 > ⚠️ **Note:** These are sample credentials. Create your own admin account using the steps in [Database Setup](#-database-setup) if you cloned this repo fresh.
